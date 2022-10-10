@@ -1,4 +1,4 @@
-import pool from '../initDB.js';
+import db from '../initDB.js';
 import checkXToken from '../helpers/checkXToken.js';
 
 export default async function depositRun(req, res) {
@@ -31,9 +31,7 @@ async function makeDeposit(req, res) {
     return;
   }
 
-  const usersData = await pool.query('SELECT id, balance FROM users WHERE username = $1', [username]);
-
-  const [user] = usersData.rows;
+  const [user] = await db.query('SELECT id, balance FROM users WHERE username = $1', [username]);
 
   if (!user) {
     res.statusCode = 400;
@@ -59,17 +57,15 @@ async function makeDeposit(req, res) {
     return;
   }
 
-  const usersUpdateInfo = await pool.query(
+  const [updatedUser] = await db.query(
     'UPDATE users SET balance = $1 WHERE id = $2 RETURNING balance',
     [user.balance + Number(amount), user.id],
   );
-  const [updatedUser] = usersUpdateInfo.rows;
 
-  const depositsInfo = await pool.query(
+  const [deposit] = await db.query(
     'INSERT INTO deposits (user_id, amount) VALUES ($1, $2) RETURNING id',
     [user.id, Number(amount)],
   );
-  const [deposit] = depositsInfo.rows;
 
   res.statusCode = 200;
   const responce = {

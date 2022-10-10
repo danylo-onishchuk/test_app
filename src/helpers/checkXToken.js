@@ -1,10 +1,9 @@
-import pool from '../initDB.js';
+import db from '../initDB.js';
 
-export default async function checkXToken(userId, token) {
-  const userTokensData = await pool.query('SELECT token FROM tokens WHERE user_id = $1', [userId]);
-  const [userToken] = userTokensData.rows;
+export default async function checkXToken(userId, requestToken) {
+  const { token } = await db.one('SELECT token FROM tokens WHERE user_id = $1', [userId]);
 
-  if (userToken.token === token) {
+  if (token === requestToken) {
     return true;
   }
 

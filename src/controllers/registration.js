@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import pool from '../initDB.js';
+import db from '../initDB.js';
 import validateData from '../helpers/validateData.js';
 
 export default async function registerRun(req, res) {
@@ -39,9 +39,9 @@ async function register(req, res) {
     return;
   }
 
-  const usersData = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+  const users = await db.query('SELECT id FROM users WHERE username = $1', [username]);
 
-  if (usersData.rows.length !== 0) {
+  if (users.length > 0) {
     res.statusCode = 400;
     const responce = {
       message: 'duplicate',
@@ -53,15 +53,14 @@ async function register(req, res) {
     return;
   }
 
-  const queryData = await pool.query(
+  const [newUser] = await db.query(
     'INSERT INTO users (username, password, balance) VALUES ($1, $2, $3) RETURNING id',
     [username, password, 0],
   );
 
-  const [newUser] = queryData.rows;
   const newToken = uuidv4();
 
-  await pool.query(
+  await db.query(
     'INSERT INTO tokens (user_id, token) VALUES ($1, $2)',
     [newUser.id, newToken],
   );

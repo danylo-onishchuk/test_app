@@ -1,4 +1,4 @@
-import pool from '../initDB.js';
+import db from '../initDB.js';
 import checkXToken from '../helpers/checkXToken.js';
 
 export default async function rollbackRun(req, res) {
@@ -30,9 +30,8 @@ async function rollback(req, res) {
     return;
   }
 
-  const depositsData = await pool.query('SELECT id, user_id, amount FROM deposits WHERE id = $1', [depositId]);
-
-  const [deposit] = depositsData.rows;
+  const depositsData = await db.query('SELECT id, user_id, amount FROM deposits WHERE id = $1', [depositId]);
+  const [deposit] = depositsData;
 
   if (!deposit) {
     res.statusCode = 400;
@@ -60,19 +59,17 @@ async function rollback(req, res) {
     return;
   }
 
-  const usersInfo = await pool.query(
+  const [user] = await db.query(
     'SELECT id, balance FROM users WHERE id = $1',
     [deposit.user_id],
   );
-  const [user] = usersInfo.rows;
 
-  const usersUpdateInfo = await pool.query(
+  const [updatedUser] = await db.query(
     'UPDATE users SET balance = $1 WHERE id = $2 RETURNING balance',
     [user.balance - deposit.amount, user.id],
   );
-  const [updatedUser] = usersUpdateInfo.rows;
 
-  await pool.query('DELETE FROM deposits WHERE id = $1', [deposit.id]);
+  await db.query('DELETE FROM deposits WHERE id = $1', [deposit.id]);
 
   res.statusCode = 200;
   const responce = {

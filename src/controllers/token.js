@@ -1,4 +1,4 @@
-import pool from '../initDB.js';
+import db from '../initDB.js';
 
 export default async function tokenRun(req, res) {
   try {
@@ -26,10 +26,12 @@ async function getToken(req, res) {
     return;
   }
 
-  const usersData = await pool.query('SELECT id, balance FROM users WHERE username = $1 and password = $2', [username, password]);
-  const [user] = usersData.rows;
+  const [user] = await db.query(
+    'SELECT id, balance FROM users WHERE username = $1 AND password = $2',
+    [username, String(password)],
+  );
 
-  if (usersData.rows.length === 0) {
+  if (!user) {
     res.statusCode = 401;
     const responce = {
       message: 'unauthorized',
@@ -41,12 +43,14 @@ async function getToken(req, res) {
     return;
   }
 
-  const tokensData = await pool.query('SELECT token FROM tokens WHERE user_id = $1', [user.id]);
-  const [{ token }] = tokensData.rows;
+  const [{ token }] = await db.query(
+    'SELECT token FROM tokens WHERE user_id = $1',
+    [user.id],
+  );
 
-  const gamesData = await pool.query('SELECT id FROM games');
+  const gamesData = await db.query('SELECT id FROM games');
 
-  const gameIds = gamesData.rows.map((game) => game.id);
+  const gamesIds = gamesData.map((game) => game.id);
 
   res.statusCode = 200;
   const responce = {
@@ -54,7 +58,7 @@ async function getToken(req, res) {
     messageDescription: 'Success',
     token,
     balance: user.balance,
-    games: gameIds,
+    games: gamesIds,
   };
 
   res.send(responce);

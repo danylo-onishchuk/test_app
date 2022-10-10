@@ -1,18 +1,12 @@
-import pkg from 'pg';
 import dotenv from 'dotenv';
+import pgPromise from 'pg-promise';
 
 dotenv.config();
 
 const { DB_NAME, DB_HOST, DB_PASS } = process.env;
 
-const config = {
-  user: DB_NAME,
-  database: DB_NAME,
-  password: DB_PASS,
-  host: DB_HOST,
-};
+const pgp = pgPromise({});
 
-const { Pool } = pkg;
-const pool = new Pool(config);
+const db = pgp(`postgres://${DB_NAME}:${DB_PASS}@${DB_HOST}/${DB_NAME}`);
 
-export default pool;
+export default db;

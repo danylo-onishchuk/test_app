@@ -1,4 +1,4 @@
-import pool from '../initDB.js';
+import db from '../initDB.js';
 import checkXToken from '../helpers/checkXToken.js';
 
 export default async function buyGameRun(req, res) {
@@ -31,16 +31,13 @@ async function buyGame(req, res) {
     return;
   }
 
-  const usersData = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-  const [user] = usersData.rows;
+  const [user] = await db.query('SELECT * FROM users WHERE username = $1', [username]);
 
-  const isTokenValidated = await checkXToken(user.id, token);
-
-  if (!token || !isTokenValidated) {
+  if (!user) {
     res.statusCode = 401;
     const responce = {
       message: 'unauthorized',
-      messageDescription: 'Not successful, invalid token or username',
+      messageDescription: 'Not successful, invalid username',
     };
 
     res.send(responce);
@@ -48,10 +45,23 @@ async function buyGame(req, res) {
     return;
   }
 
-  const gamesData = await pool.query('SELECT * FROM games WHERE id = $1', [gameId]);
-  const [game] = gamesData.rows;
+  const isTokenValidated = await checkXToken(user.id, token);
 
-  if (gamesData.rows.length === 0) {
+  if (!isTokenValidated) {
+    res.statusCode = 401;
+    const responce = {
+      message: 'unauthorized',
+      messageDescription: 'Not successful, invalid token',
+    };
+
+    res.send(responce);
+
+    return;
+  }
+
+  const [game] = await db.query('SELECT * FROM games WHERE id = $1', [gameId]);
+
+  if (!game) {
     res.statusCode = 400;
     const responce = {
       message: 'unknown',
@@ -100,22 +110,20 @@ async function buyGame(req, res) {
 }
 
 async function transferFundsToCreator(user, game) {
-  const creatorData = await pool.query(
+  const [creator] = await db.query(
     'SElECT balance FROM users WHERE id = $1',
     [game.creator_id],
   );
-  const [creator] = creatorData.rows;
 
-  await pool.query(
+  await db.query(
     'UPDATE users SET balance = $1 WHERE id = $2',
     [creator.balance + game.price, game.creator_id],
   );
 
-  const userUpdatedData = await pool.query(
+  const [userUpdated] = await db.query(
     'UPDATE users SET balance = $1 WHERE id = $2 RETURNING balance',
     [user.balance - game.price, user.id],
   );
-  const [userUpdated] = userUpdatedData.rows;
 
   return userUpdated.balance;
 }

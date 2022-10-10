@@ -1,10 +1,9 @@
-import pool from '../initDB.js';
+import db from '../initDB.js';
 
-export default async function checkXTokenOfCreator(xToken) {
-  const userTokensData = await pool.query('SELECT user_id FROM tokens WHERE token = $1', [xToken]);
-  const [userToken] = userTokensData.rows;
+export default async function checkXTokenOfCreator(token) {
+  const [userToken] = await db.query('SELECT user_id FROM tokens WHERE token = $1', [token]);
 
-  if (userToken.user_id) {
+  if (userToken) {
     return userToken.user_id;
   }
 

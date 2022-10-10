@@ -1,4 +1,4 @@
-import pool from '../initDB.js';
+import db from '../initDB.js';
 import checkXTokenOfCreator from '../helpers/checkXTokenOfCreator.js';
 
 export default async function createGameRun(req, res) {
@@ -35,7 +35,7 @@ async function createGame(req, res) {
 
   const userId = await checkXTokenOfCreator(token);
 
-  if (!token || !userId) {
+  if (!token || userId === false) {
     res.statusCode = 401;
     const responce = {
       message: 'unauthorized',
@@ -47,11 +47,10 @@ async function createGame(req, res) {
     return;
   }
 
-  const gamesData = await pool.query(
+  const [newGame] = await db.query(
     'INSERT INTO games (name, title, price, creator_id) VALUES ($1, $2, $3, $4) RETURNING id',
     [name, title, price, userId],
   );
-  const [newGame] = gamesData.rows;
 
   res.statusCode = 200;
   const responce = {
