@@ -62,7 +62,7 @@ async function register(req, res) {
   const newToken = uuidv4();
 
   await pool.query(
-    'INSERT INTO tokens (user_id, token) VALUES ($1, $2) RETURNING *',
+    'INSERT INTO tokens (user_id, token) VALUES ($1, $2)',
     [newUser.id, newToken],
   );
 
